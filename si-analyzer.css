@@ -1,0 +1,89 @@
+body {
+  padding: 0px;
+  font-family: Verdana,Arial,Helvetica,sans-serif;
+  font-style: normal;
+  font-variant: normal;
+  font-weight: normal;
+  font-size: 100%;
+  line-height: 100%;
+  font-size-adjust: none;
+  font-stretch: normal;
+}
+
+table {
+  border-style: none;
+  margin: auto;
+}
+
+div#page_header table {
+  border-style: solid none;
+  border-color: #000000;
+  border-width: 1px 0px;
+  margin: 0px auto 30px;
+  padding: 10px 5px;
+  border-collapse: separate;
+  width: 100%;
+}
+
+div#page_header #first_row {
+  vertical-align: text-top;
+  height: 40px;
+}
+
+div#page_header #event_name, #page_name {
+  min-width: 300px;
+  text-align: left;
+}
+div#page_header #event_name {
+  font-size: 120%;
+  text-align: left;
+}
+div#page_header #page_name {
+  vertical-align: text-bottom;
+}
+div#page_header #date_time {
+  min-width: 100px;
+  text-align: right;
+}
+div#page_header #creation_text {
+  text-align: right;
+  vertical-align: text-bottom;
+  font-size: 50%;
+}
+
+div#splits {
+  margin-bottom: 30px;
+}
+
+div#splits table {
+  font-size: 75%;
+  margin: auto;
+  border-collapse: collapse;
+}
+
+div#splits th, td {
+  border-style: solid;
+  border-width: thin;
+  padding: 5px;
+}
+
+div#splits th {
+  padding-bottom: 8px;
+  text-align: left;
+  vertical-align: middle;
+}
+div#splits th.top {
+  width: 260px;
+}
+
+div#splits td.sum {
+    font-weight: bold;
+}
+
+div#splits th.cl, th.ev {
+    text-align: center;
+}
+
+div#splits td.sum, td.cl, td.ev {
+  text-align: center;
+}
