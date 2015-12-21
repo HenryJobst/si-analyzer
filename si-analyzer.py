@@ -137,7 +137,7 @@ body.append(
         E.table(
             E.tr(
                 E.th({'id':'event_name'}, E.nobr(soup.title.string)),
-                E.th({'id':'date_time'}, E.nobr(strftime('%d.%m.%Y %H:%M:%S Uhr', time.localtime())))
+                E.th({'id':'date_time'}, E.nobr(strftime('%d.%m.%Y %H:%M Uhr', time.localtime())))
             ),
             E.tr(
                 E.th({'id':'page_name'}, E.nobr("Zwischenzeitenauswertung")),
@@ -146,6 +146,20 @@ body.append(
         )
     )
 )
+
+ntrow = None
+navtable = E.table({'id':'navtable'})
+nav = E.nav({'id':'navi'})
+header = E.header()
+nav.append(navtable)
+header.append(E.h2("Übersicht"))
+header.append(nav)
+body.append(header)
+sisection = E.section()
+sisection.append(E.h2("Zeiten"))
+body.append(sisection)
+
+lastkey0 = None
 
 for item in sorted(siTimes.items(), key=lambda t: t[0][0]+t[0][1]):
     key = item[0]
@@ -177,20 +191,25 @@ for item in sorted(siTimes.items(), key=lambda t: t[0][0]+t[0][1]):
             continue
 
     allValues = sorted(values, key=sorter)
-    keyString = key[0] + '->' + key[1]
-    print()
-    print(keyString)
-    print()
-    splits_div = E.div({'id':'splits'})
-    body.append(splits_div)
-    table = E.table()
-    splits_div.append(table)
+
     key0 = key[0]
     key1 = key[1]
     if key0 == '000':
         key0 = 'Start'
     if key1 == '999':
         key1 = 'Ziel'
+
+    keyString = key0 + '->' + key1
+    print()
+    print(keyString)
+    print()
+
+    splits_div = E.div({'id':'splits'})
+    sisection.append(splits_div)
+    anchor = "A_{}".format(key0+key1)
+    table = E.table({'id': anchor})
+    splits_div.append(table)
+
     table.append(
         E.colgroup(E.col({'width':'25'}), E.col({'width':'35'}), E.col({'width':'60'}), E.col({'width':'20'}), E.col({'width':'250'})))
     table.append(
@@ -198,6 +217,17 @@ for item in sorted(siTimes.items(), key=lambda t: t[0][0]+t[0][1]):
             E.th(key0 + html.unescape("&nbsp;&rArr;&nbsp;") + key1, {'colspan':'5', 'id':'top'})
         )
     )
+
+    if lastkey0 == None or lastkey0 != key0:
+        lastkey0 = key0
+        ntrow = E.tr()
+        navtable.append(ntrow)
+
+    navtd = E.td(
+                E.a(key0 + html.unescape("&nbsp;&rArr;&nbsp;") + key1, {'href' : '#{}'.format(anchor)} )
+            )
+
+    ntrow.append(navtd)
 
     place = 0
     placeOffset = 0
@@ -249,6 +279,7 @@ for item in sorted(siTimes.items(), key=lambda t: t[0][0]+t[0][1]):
         if bestTime is None:
             bestTime = stime
     processed[key] = True
+    table.append(E.tr(E.td({'colspan':'5'}, E.a(html.unescape("&uarr;"), {'href':'#navi'}))))
 
 if len(nameTimes) > 0 and len(nameFound) > 1:
     maxNameLen = 0

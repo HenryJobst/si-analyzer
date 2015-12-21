@@ -34,17 +34,21 @@ div#page_header #event_name, #page_name {
   min-width: 300px;
   text-align: left;
 }
+
 div#page_header #event_name {
   font-size: 120%;
   text-align: left;
 }
+
 div#page_header #page_name {
   vertical-align: text-bottom;
 }
+
 div#page_header #date_time {
   min-width: 100px;
   text-align: right;
 }
+
 div#page_header #creation_text {
   text-align: right;
   vertical-align: text-bottom;
@@ -62,7 +66,7 @@ div#splits table {
 }
 
 div#splits th, td {
-  border-style: solid;
+  /*border-style: solid;*/
   border-width: thin;
   padding: 5px;
 }
@@ -72,18 +76,13 @@ div#splits th {
   text-align: left;
   vertical-align: middle;
 }
-div#splits th.top {
-  width: 260px;
+
+#navtable {
+    align: left;
+    font-size: 75%;
+    border-collapse: collapse;
 }
 
-div#splits td.sum {
-    font-weight: bold;
-}
-
-div#splits th.cl, th.ev {
-    text-align: center;
-}
-
-div#splits td.sum, td.cl, td.ev {
-  text-align: center;
+#navtable tr, th, td {
+    border: none;
 }
