@@ -3,7 +3,11 @@ import requests
 import time
 from time import strftime
 #from time import time
-#from html import HTML
+import sys
+
+from lxml import etree as ET
+from lxml.builder import E
+import html
 
 from bs4 import BeautifulSoup
 
@@ -18,6 +22,7 @@ parser.add_argument('-m', '--merge', action='store_true', help='merge control po
 parser.add_argument('--proxy')
 parser.add_argument('--version', action='version', version='%(prog)s 0.1')
 parser.add_argument('-n', '--name', nargs='+')
+parser.add_argument('-o', '--ofile', help='switch and filename for html output')
 
 args = parser.parse_args()
 
@@ -32,15 +37,17 @@ file=None
 document = ''
 
 if args.local == True:
-    file = open(args.url, 'r')
+    file = open(args.url, 'r', encoding = "ISO-8859-1")
     document = file.read()
 else:
     r = requests.get(args.url, proxies=proxies)
     document = r.text
 
-soup = BeautifulSoup(document, 'html5lib')
+soup = BeautifulSoup(document, 'lxml') #html5lib')
 
-#print(soup.prettify())
+#pfile = open('debug.html', 'w', encoding = "ISO-8859-1")
+#pfile.write(soup.prettify())
+#pfile.close()
 
 print(soup.title.string)
 
@@ -70,26 +77,41 @@ for cElem in soup.find_all(id='c00'): # find courses
 
         if name != None:
             #print(name, ageGroup, club, sep=':')
-            controlls = ['Start']
+            controlls = ['000']
             times = ['0:00']
             ssiElem = tElem.find_next('table').tbody
+            #print(ssiElem)
             trs = ssiElem.find_all('tr')
-            if len(trs) < 3:
+            rowBlocks = len(trs)//3
+            if  rowBlocks < 1:
                 continue
-            for controll in trs[0]:
-                controllString = controll.string
-                if controllString == None:
-                    continue
-                if controllString.find('*') != -1:
-                    continue
-                controllString = controllString.split('(')[0]
-                controlls.append(controllString)
-            for stime in trs[2]:
-                timeString = stime.string
-                if timeString == None:
-                    continue
-                parsedTime = time.strptime(timeString, "%M:%S")
-                times.append(parsedTime)
+            for rowBlock in range(rowBlocks):
+                for controll in trs[rowBlock*3]:
+                    controllString = controll.string
+                    if controllString == None:
+                        continue
+                    if controllString.find('*') != -1:
+                        continue
+                    controllString = controllString.split('(')[0]
+                    if controllString == 'Ziel':
+                        controllString = '999'
+                    try:
+                        int(controllString)
+                    except ValueError:
+                        continue
+                    controlls.append(controllString)
+
+                for stime in trs[rowBlock*3+2]:
+                    if stime.find_all(id='rb') == None:
+                        break
+                    timeString = stime.string
+                    if timeString == None:
+                        continue
+                    try:
+                        time.strptime(timeString, "%M:%S")
+                    except ValueError:
+                        continue
+                    times.append(time.strptime(timeString, "%M:%S"))
 
             for i in range(1, len(controlls)):
                 #print(i, controlls[i-1], controlls[i], times[i])
@@ -102,7 +124,28 @@ for cElem in soup.find_all(id='c00'): # find courses
 processed = {}
 nameTimes = {}
 
-htmlpage = HTML()
+htmlpage = E.html()
+htmlpage.append(
+    E.head(
+        E.title(soup.title.string),
+        E.link({'rel':'stylesheet', 'type':'text/css', 'href':'si-analyzer.css'})
+    )
+)
+body = E.body()
+body.append(
+    E.div({'id':'page_header'},
+        E.table(
+            E.tr(
+                E.th({'id':'event_name'}, E.nobr(soup.title.string)),
+                E.th({'id':'date_time'}, E.nobr(strftime('%d.%m.%Y %H:%M:%S Uhr', time.localtime())))
+            ),
+            E.tr(
+                E.th({'id':'page_name'}, E.nobr("Zwischenzeitenauswertung")),
+                E.th({'id':'creation_text'}, E.nobr("erzeugt mit SI-Analyzer von Henry Jobst"))
+            )
+        )
+    )
+)
 
 for item in sorted(siTimes.items(), key=lambda t: t[0][0]+t[0][1]):
     key = item[0]
@@ -134,9 +177,27 @@ for item in sorted(siTimes.items(), key=lambda t: t[0][0]+t[0][1]):
             continue
 
     allValues = sorted(values, key=sorter)
+    keyString = key[0] + '->' + key[1]
     print()
-    print(key[0], '->', key[1])
+    print(keyString)
     print()
+    splits_div = E.div({'id':'splits'})
+    body.append(splits_div)
+    table = E.table()
+    splits_div.append(table)
+    key0 = key[0]
+    key1 = key[1]
+    if key0 == '000':
+        key0 = 'Start'
+    if key1 == '999':
+        key1 = 'Ziel'
+    table.append(
+        E.colgroup(E.col({'width':'25'}), E.col({'width':'35'}), E.col({'width':'60'}), E.col({'width':'20'}), E.col({'width':'250'})))
+    table.append(
+        E.tr(
+            E.th(key0 + html.unescape("&nbsp;&rArr;&nbsp;") + key1, {'colspan':'5', 'id':'top'})
+        )
+    )
 
     place = 0
     placeOffset = 0
@@ -145,7 +206,9 @@ for item in sorted(siTimes.items(), key=lambda t: t[0][0]+t[0][1]):
     for value in allValues:
         actualName = value[0][0]
         sign = ''
+        html_sign = ''
         if value[2] == False:
+            html_sign = html.unescape('&nbsp;&lArr;&nbsp;')
             sign = '<'
         stime = value[1]
         if lastTime is None or lastTime != stime:
@@ -171,6 +234,13 @@ for item in sorted(siTimes.items(), key=lambda t: t[0][0]+t[0][1]):
             if diffTime is not None and diffTime != 0:
                 diffString = '(+{0:02}:{1:02})'.format(diffTime//60, diffTime%60)
             print('{:3}.'.format(place), strftime('%M:%S', value[1]), diffString, '{:1}'.format(sign), actualName)
+            tableRow = E.tr()
+            tableRow.append(E.td('{:3}.'.format(place)))
+            tableRow.append(E.td(strftime('%M:%S', value[1])))
+            tableRow.append(E.td(diffString))
+            tableRow.append(E.td('{:1}'.format(html_sign)))
+            tableRow.append(E.td(actualName))
+            table.append(tableRow)
             if actualName in nameTimes:
                 nameTimes[actualName] += actualRuntime
             else:
@@ -204,7 +274,12 @@ if len(nameTimes) > 0 and len(nameFound) > 1:
 if file != None:
     file.close()
 
-#print(htmlpage)
+htmlpage.append(body)
+
+if args.ofile:
+    ofile = open('{}.html'.format(args.ofile), 'w')
+    ofile.write(ET.tostring(htmlpage, pretty_print=True).decode('utf-8'))
+    ofile.close()
 
 #print(args.type)
 #print(args.merge)
