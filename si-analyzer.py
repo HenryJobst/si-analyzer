@@ -210,11 +210,15 @@ for item in sorted(siTimes.items(), key=lambda t: t[0][0]+t[0][1]):
     table = E.table({'id': anchor})
     splits_div.append(table)
 
+    arrow = "&nbsp;&hArr;&nbsp;"
+    if not args.merge or key0 == "Start" or key1 == "Ziel":
+        arrow = "&nbsp;&rArr;&nbsp;"
+
     table.append(
         E.colgroup(E.col({'width':'25'}), E.col({'width':'35'}), E.col({'width':'60'}), E.col({'width':'20'}), E.col({'width':'250'})))
     table.append(
         E.tr(
-            E.th(key0 + html.unescape("&nbsp;&rArr;&nbsp;") + key1, {'colspan':'5', 'id':'top'})
+            E.th(key0 + html.unescape(arrow) + key1, {'colspan':'5', 'id':'top'})
         )
     )
 
@@ -224,7 +228,7 @@ for item in sorted(siTimes.items(), key=lambda t: t[0][0]+t[0][1]):
         navtable.append(ntrow)
 
     navtd = E.td(
-                E.a(key0 + html.unescape("&nbsp;&rArr;&nbsp;") + key1, {'href' : '#{}'.format(anchor)} )
+                E.a(key0 + html.unescape(arrow) + key1, {'href' : '#{}'.format(anchor)} )
             )
 
     ntrow.append(navtd)
