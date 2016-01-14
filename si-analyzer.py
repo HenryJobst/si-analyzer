@@ -92,6 +92,34 @@ def parseHTML(soup, siTimes, titleString):
 def inSeconds(value):
     return value.tm_hour * 3600 + value.tm_min * 60 + value.tm_sec;
 
+def parseTimeFmt(timeString, format):
+    try:
+        time.strptime(timeString, format)
+        return True
+    except ValueError:
+        return False
+
+def parseTime(timeString):
+    if parseTimeFmt(timeString, "%H:%M:%S") == True:
+        return "%H:%M:%S"
+    elif parseTimeFmt(timeString, "%M:%S") == True:
+        return "%M:%S"
+    return None
+
+def parseTimeWithMispunch(timeString):
+    if timeString == None:
+        print ('[EE]: timeString is empty', sElem)
+        return None
+    parseFmt = parseTime(timeString)
+    if parseFmt == None:
+        if timeString == '-----':
+            return None # mispunch
+        if timeString == '0.00':
+            return None # mispunch
+        print ('[WW]: timeString is not convertible to a time', timeString)
+        return None
+    return time.strptime(timeString, parseFmt)
+
 def parseXML203(soup, siTimes, titleString):
 
     #print("parseXML203")
@@ -104,17 +132,18 @@ def parseXML203(soup, siTimes, titleString):
         birthDate = '-'
         if pElem.person.birthdate.date and len(pElem.person.birthdate.date.contents) > 0:
             birthDate = pElem.person.birthdate.date.contents[0].string
-        print(name, ageGroup, club, sep=':')
+        #print(name, ageGroup, club, sep=':')
 
         startTime = time.strptime(pElem.result.starttime.clock.contents[0].string, "%H:%M:%S")
         finishTime = time.strptime(pElem.result.finishtime.clock.contents[0].string, "%H:%M:%S")
-        runTime = pElem.result.time.contents[0].string
+        runTimeString = pElem.result.time.contents[0].string
         #status = pElem.result.competitorstatus
 
         controlls = ['000']
         times = ['0:00']
 
         lastTime = None
+
         for sElem in pElem.find_all('splittime'):
             sequenceNumber = sElem['sequence']
 
@@ -126,32 +155,40 @@ def parseXML203(soup, siTimes, titleString):
 
             timeString = sElem.time.contents[0].string
 
-            if timeString == None:
-                continue
-            try:
-                time.strptime(timeString, "%H:%M:%S")
-            except ValueError:
+            actualRunTime = parseTimeWithMispunch(timeString)
+            if actualRunTime == None:
                 continue
 
-            actualRunTime = time.strptime(timeString, "%H:%M:%S")
+            #print('->', controlCode, ' : ', time.asctime(actualRunTime))
 
             splitTime = None
             if lastTime != None:
-                splitTime = inSeconds(actualRunTime) - inSeconds(lastTime)
+                tDiff = time.mktime(actualRunTime) - time.mktime(lastTime)
+                #print(tDiff)
+                splitTime = time.localtime(tDiff)
             else:
-                splitTime = actualRunTime
-                lastTime = actualRunTime
+                splitTime = time.localtime(time.mktime(actualRunTime))
+
             if splitTime == None:
                 continue;
+
+            lastTime = actualRunTime
+
+            #print('<-', controlCode, ' :: ', time.asctime(splitTime))
 
             controlls.append(controlCode)
             times.append(splitTime)
 
         controlls.append('999')
         if lastTime != None:
-            times.append(inSeconds(finishTime)-inSeconds(lastTime))
+            runTime = parseTimeWithMispunch(runTimeString)
+            if runTime != None:
+                times.append(time.localtime(time.mktime(runTime)-time.mktime(lastTime)))
+            else:
+                times.append(time.localtime(time.mktime(finishTime)-time.mktime(startTime)))
         else:
-            times.append(inSeconds(finishTime)-inSeconds(startTime))
+            times.append(time.localtime(time.mktime(finishTime)-time.mktime(startTime)))
+
 
         for i in range(1, len(controlls)):
             #print(i, controlls[i-1], controlls[i], times[i])
@@ -161,7 +198,7 @@ def parseXML203(soup, siTimes, titleString):
                 siTimes[keyTuple1] = []
             siTimes[keyTuple1].append(values)
 
-
+        #break
 
 def createReport(siTimes, args, titleString):
 
@@ -215,9 +252,11 @@ def createReport(siTimes, args, titleString):
 
     for item in sorted(siTimes.items(), key=lambda t: t[0][0]+t[0][1]):
         key = item[0]
+        #print('#:', key)
         if args.merge and (key[::-1] in processed):
             continue
         values = item[1]
+        #print('#:', values)
         if args.merge:
             reverseKey = (key[1], key[0])
             if reverseKey in siTimes:
@@ -386,6 +425,8 @@ parser.add_argument('-n', '--name', nargs='+')
 parser.add_argument('-o', '--ofile', help='switch and filename for html output')
 
 args = parser.parse_args()
+
+print(args.name)
 
 if args.proxy != '':
     proxies = {
