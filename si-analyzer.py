@@ -135,8 +135,12 @@ def parseXML203(soup, siTimes, titleString):
         #print(name, ageGroup, club, sep=':')
 
         startTime = time.strptime(pElem.result.starttime.clock.contents[0].string, "%H:%M:%S")
-        finishTime = time.strptime(pElem.result.finishtime.clock.contents[0].string, "%H:%M:%S")
-        runTimeString = pElem.result.time.contents[0].string
+        finishTime = None
+        if pElem.result.finishtime.clock.contents:
+             finishTime = time.strptime(pElem.result.finishtime.clock.contents[0].string, "%H:%M:%S")
+        runTimeString = None
+        if pElem.result.time.contents:
+            runTimeString = pElem.result.time.contents[0].string
         #status = pElem.result.competitorstatus
 
         controlls = ['000']
@@ -180,17 +184,19 @@ def parseXML203(soup, siTimes, titleString):
             times.append(splitTime)
 
         controlls.append('999')
-        if lastTime != None:
+        if lastTime != None and runTimeString:
             runTime = parseTimeWithMispunch(runTimeString)
             if runTime != None:
                 times.append(time.localtime(time.mktime(runTime)-time.mktime(lastTime)))
-            else:
+            elif finishTime:
                 times.append(time.localtime(time.mktime(finishTime)-time.mktime(startTime)))
-        else:
+        elif finishTime:
             times.append(time.localtime(time.mktime(finishTime)-time.mktime(startTime)))
 
 
         for i in range(1, len(controlls)):
+            if i > (len(times) - 1):
+                continue
             #print(i, controlls[i-1], controlls[i], times[i])
             values = [(name, ageGroup, club), times[i], True]
             keyTuple1 = (controlls[i-1], controlls[i])
@@ -265,6 +271,7 @@ def createReport(siTimes, args, titleString):
                     value[2] = False
                     values.append(value)
 
+        valueCount = len(values)
         nameFound = {}
         if args.name:
             for name in args.name:
@@ -309,7 +316,7 @@ def createReport(siTimes, args, titleString):
             E.colgroup(E.col({'width':'25'}), E.col({'width':'35'}), E.col({'width':'60'}), E.col({'width':'20'}), E.col({'width':'250'})))
         table.append(
             E.tr(
-                E.th(key0 + html.unescape(arrow) + key1, {'colspan':'5', 'id':'top'})
+                E.th(key0 + html.unescape(arrow) + key1 + ' ({})'.format(valueCount), {'colspan':'5', 'id':'top'})
             )
         )
 
@@ -319,7 +326,7 @@ def createReport(siTimes, args, titleString):
             navtable.append(ntrow)
 
         navtd = E.td(
-                    E.a(key0 + html.unescape(arrow) + key1, {'href' : '#{}'.format(anchor)} )
+                    E.a(key0 + html.unescape(arrow) + key1 + ' ({})'.format(valueCount), {'href' : '#{}'.format(anchor)} )
                 )
 
         ntrow.append(navtd)
