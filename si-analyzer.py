@@ -89,6 +89,88 @@ def parseHTML(soup, siTimes, titleString):
                         siTimes[keyTuple1] = []
                     siTimes[keyTuple1].append(values)
 
+def parseHTML2(soup, siTimes, titleString):
+
+    titleString = soup.title.string
+    print(titleString)
+
+    for cElem in soup.find_all(id='c00'): # find courses
+        course = cElem.text.split('(')[0].strip()
+
+        sElem = cElem.parent.parent
+
+        for tElem in sElem.find_all_next('table'):
+            #print(tElem)
+            if tElem.find(id='c00') is not None:
+                break
+            nameElem = tElem.find(id='c12')
+            clubElem = tElem.find(id='c14')
+            ageGroupElem = None
+            name = None
+            club = None
+            ageGroup = None
+            if nameElem != None:
+                name = nameElem.contents[0].string
+            if clubElem != None:
+                club = clubElem.contents[0].string
+            if ageGroupElem != None:
+                ageGroup = ageGroupElem.contents[0].string
+
+            if name != None:
+                # print(name, ageGroup, club, sep=':')
+                controlls = ['000']
+                times = ['0:00']
+                nextTable = tElem.find_next('table')
+                if nextTable == None:
+                    continue
+                ssiElem = nextTable.tbody
+                if ssiElem == None:
+                    continue
+                # print(ssiElem)
+                trs = ssiElem.find_all('tr')
+                rowBlocks = len(trs)//3
+                if  rowBlocks < 1:
+                    continue
+                for rowBlock in range(rowBlocks):
+                    for controll in trs[rowBlock*3]:
+                        controllString = controll.string
+                        if controllString == None:
+                            continue
+                        if controllString.find('*') != -1:
+                            continue
+                        controllString = controllString.split('(')[0]
+                        if controllString == 'Ziel':
+                            controllString = '999'
+                        try:
+                            int(controllString)
+                        except ValueError:
+                            continue
+                        controlls.append(controllString)
+
+                    for stime in trs[rowBlock*3+2]:
+                        if stime.find_all(id='rb') == None:
+                            break
+                        timeString = stime.string
+                        if timeString == None:
+                            continue
+                        try:
+                            time.strptime(timeString, "%M:%S")
+                        except ValueError:
+                            continue
+                        times.append(time.strptime(timeString, "%M:%S"))
+
+                if len(controlls) == 0:
+                    continue
+                if len(times) != len(controlls):
+                    continue
+                for i in range(1, len(controlls)):
+                    # print(i, controlls[i-1], controlls[i], times[i])
+                    values = [(name, ageGroup, club), times[i], True]
+                    keyTuple1 = (controlls[i-1], controlls[i])
+                    if keyTuple1 not in siTimes:
+                        siTimes[keyTuple1] = []
+                    siTimes[keyTuple1].append(values)
+
 def inSeconds(value):
     return value.tm_hour * 3600 + value.tm_min * 60 + value.tm_sec;
 
@@ -417,7 +499,7 @@ parser = argparse.ArgumentParser(description='Analyze SI times.')
 parser.add_argument('url')
 parser.add_argument('-l', '--local',  action='store_true', help='url is a local file')
 parser.add_argument('-t', '--type', choices=['course', 'age', 'all'], default='all', help='group times by all, age group, course, default: all')
-parser.add_argument('-i', '--inputformat', choices=['html', 'xml203', 'xml300'], default='html', help='input file format, default: html')
+parser.add_argument('-i', '--inputformat', choices=['html', 'html2', 'xml203', 'xml300'], default='html', help='input file format, default: html')
 parser.add_argument('-m', '--merge', action='store_true', help='merge control post sequences, eg. 110-111 with 111-110')
 parser.add_argument('--proxy')
 parser.add_argument('--version', action='version', version='%(prog)s 0.1')
@@ -456,6 +538,8 @@ titleString = ""
 
 if args.inputformat == 'html':
     parseHTML(soup, siTimes, titleString)
+elif  args.inputformat == 'html2':
+    parseHTML2(soup, siTimes, titleString)
 elif  args.inputformat == 'xml203':
     parseXML203(soup, siTimes, titleString)
 
