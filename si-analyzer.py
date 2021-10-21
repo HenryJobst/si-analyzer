@@ -1,15 +1,13 @@
 import argparse
-import requests
+import html
 import time
 from time import strftime
 
-import sys
-
+import requests
+from bs4 import BeautifulSoup
 from lxml import etree as ET
 from lxml.builder import E
-import html
 
-from bs4 import BeautifulSoup
 
 ################# functions ################################
 
@@ -19,7 +17,6 @@ def sorter(value):
 
 
 def parseHTML(soup, siTimes, titleString):
-
     titleString = soup.title.string
     print(titleString)
 
@@ -92,7 +89,6 @@ def parseHTML(soup, siTimes, titleString):
 
 
 def parseHTML2(soup, siTimes, titleString):
-
     titleString = soup.title.string
     print(titleString)
 
@@ -239,16 +235,15 @@ def parseTimeWithMispunch(timeString):
 
 
 def parseXML203(soup, siTimes, titleString):
-
     # print("parseXML203")
     titleString = "???"
 
     for pElem in soup.find_all("personresult"):
         ageGroup = pElem.parent.classshortname.contents[0].string
         name = (
-            pElem.person.personname.family.contents[0].string
-            + ", "
-            + pElem.person.personname.given.contents[0].string
+                pElem.person.personname.family.contents[0].string
+                + ", "
+                + pElem.person.personname.given.contents[0].string
         )
         club = pElem.club.shortname.contents[0].string
         # print(name, ageGroup, club, sep=':')
@@ -334,18 +329,21 @@ def parseXML203(soup, siTimes, titleString):
 
 
 def parseXML300(soup, siTimes, titleString):
-
     # print("parseXML300")
     titleString = "???"
 
     for pElem in soup.find_all("personresult"):
         ageGroup = pElem.parent.shortname.contents[0].string
         name = (
-            pElem.person.family.contents[0].string
-            + ", "
-            + pElem.person.given.contents[0].string
+                pElem.person.family.contents[0].string
+                + ", "
+                + pElem.person.given.contents[0].string
         )
-        club = pElem.organisation.shortname.contents[0].string
+        organisation = pElem.organisation
+        if organisation:
+            club = organisation.shortname.contents[0].string
+        else:
+            club = "n/a"
         # print(name, ageGroup, club, sep=':')
 
         startTime = time.strptime(
@@ -433,7 +431,6 @@ def parseXML300(soup, siTimes, titleString):
 
 
 def createReport(siTimes, args, titleString):
-
     #######
     # structure: of siTimes
     #
@@ -445,15 +442,23 @@ def createReport(siTimes, args, titleString):
     processed = {}
     nameTimes = {}
 
-    htmlpage = E.html()
-    htmlpage.append(
-        E.head(
-            E.title(titleString),
-            E.link(
+    titleElement = E.title(titleString)
+    css = E.link(
                 {"rel": "stylesheet", "type": "text/css", "href": "si-analyzer.css"}
-            ),
+            )
+
+    if args.inlinecss:
+        cssfile = open("si-analyzer.css", "r")
+        csstags = cssfile.read()
+        cssfile.close()
+        css = E.style(
+            csstags
         )
-    )
+
+    head = E.head(titleElement, css)
+
+    htmlpage = E.html()
+    htmlpage.append(head)
     body = E.body()
     body.append(
         E.div(
@@ -717,7 +722,10 @@ parser.add_argument("--proxy")
 parser.add_argument("--version", action="version", version="%(prog)s 0.1")
 parser.add_argument("-n", "--name", nargs="+")
 parser.add_argument("-o", "--ofile", help="switch and filename for html output")
-
+parser.add_argument("--title", help="event title")
+parser.add_argument(
+    "--inlinecss", action="store_true", default=False,
+    help="Embed css directives. Default: False (link to external css file)")
 args = parser.parse_args()
 
 print(args.name)
@@ -746,6 +754,9 @@ pfile.close()
 siTimes = {}
 titleString = ""
 
+if args.title != "":
+    titleString = args.title
+
 if args.inputformat == "html":
     parseHTML(soup, siTimes, titleString)
 elif args.inputformat == "html2":
@@ -757,4 +768,3 @@ elif args.inputformat == "xml300":
 
 if len(siTimes):
     createReport(siTimes, args, titleString)
-
