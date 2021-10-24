@@ -9,14 +9,14 @@ from lxml import etree as ET
 from lxml.builder import E
 
 
-################# functions ################################
+# ################ functions ################################
 
 
 def sorter(value):
     return value[1].tm_min * 60 + value[1].tm_sec
 
 
-def parseHTML(soup, siTimes, titleString):
+def parse_html(soup, siTimes, titleString):
     titleString = soup.title.string
     print(titleString)
 
@@ -34,14 +34,14 @@ def parseHTML(soup, siTimes, titleString):
             name = None
             club = None
             ageGroup = None
-            if nameElem != None:
+            if nameElem:
                 name = nameElem.contents[0].string
-            if clubElem != None:
+            if clubElem:
                 club = clubElem.contents[0].string
-            if ageGroupElem != None:
+            if ageGroupElem:
                 ageGroup = ageGroupElem.contents[0].string
 
-            if name != None:
+            if name:
                 # print(name, ageGroup, club, sep=':')
                 controlls = ["000"]
                 times = ["0:00"]
@@ -54,7 +54,7 @@ def parseHTML(soup, siTimes, titleString):
                 for rowBlock in range(rowBlocks):
                     for controll in trs[rowBlock * 3]:
                         controllString = controll.string
-                        if controllString is None:
+                        if not controllString:
                             continue
                         if controllString.find("*") != -1:
                             continue
@@ -68,10 +68,10 @@ def parseHTML(soup, siTimes, titleString):
                         controlls.append(controllString)
 
                     for stime in trs[rowBlock * 3 + 2]:
-                        if stime.find_all(id="rb") is None:
+                        if not stime.find_all(id="rb"):
                             break
                         timeString = stime.string
-                        if timeString is None:
+                        if not timeString:
                             continue
                         try:
                             time.strptime(timeString, "%M:%S")
@@ -106,14 +106,14 @@ def parseHTML2(soup, siTimes, titleString):
             name = None
             club = None
             ageGroup = None
-            if nameElem != None:
+            if nameElem:
                 name = nameElem.contents[0].string
-            if clubElem != None:
+            if clubElem:
                 club = clubElem.contents[0].string
-            if ageGroupElem != None:
+            if ageGroupElem:
                 ageGroup = ageGroupElem.contents[0].string
 
-            if name != None:
+            if name:
                 # print(name, ageGroup, club, sep=':')
                 controlls = ["000"]
                 times = ["0:00"]
@@ -229,7 +229,7 @@ def parseTimeWithMispunch(timeString):
             lt.tm_wday,
             lt.tm_yday,
             lt.tm_isdst,
-        )
+            )
 
     return time.strptime(timeString, parseFmt)
 
@@ -250,12 +250,12 @@ def parseXML203(soup, siTimes, titleString):
 
         startTime = time.strptime(
             pElem.result.starttime.clock.contents[0].string, "%H:%M:%S"
-        )
+            )
         finishTime = None
         if pElem.result.finishtime.clock.contents:
             finishTime = time.strptime(
                 pElem.result.finishtime.clock.contents[0].string, "%H:%M:%S"
-            )
+                )
         runTimeString = None
         if pElem.result.time.contents:
             runTimeString = pElem.result.time.contents[0].string
@@ -305,15 +305,16 @@ def parseXML203(soup, siTimes, titleString):
             if runTime != None:
                 times.append(
                     time.localtime(time.mktime(runTime) - time.mktime(lastTime))
-                )
+                    )
             elif finishTime:
                 times.append(
-                    time.localtime(time.mktime(finishTime) - time.mktime(startTime))
-                )
+                    time.localtime(time.mktime(finishTime) - time.mktime(
+                        startTime))
+                    )
         elif finishTime:
             times.append(
                 time.localtime(time.mktime(finishTime) - time.mktime(startTime))
-            )
+                )
 
         for i in range(1, len(controlls)):
             if i > (len(times) - 1):
@@ -348,12 +349,13 @@ def parseXML300(soup, siTimes, titleString):
 
         startTime = time.strptime(
             pElem.result.starttime.contents[0].string, "%Y-%m-%dT%H:%M:%S.000"
-        )
+            )
         finishTime = None
         if pElem.result.finishTime and pElem.result.finishtime.contents:
             finishTime = time.strptime(
-                pElem.result.finishtime.contents[0].string, "%Y-%m-%dT%H:%M:%S.000"
-            )
+                pElem.result.finishtime.contents[0].string,
+                "%Y-%m-%dT%H:%M:%S.000"
+                )
         runTimeString = None
         if pElem.result.time and pElem.result.time.contents:
             runTimeString = pElem.result.time.contents[0].string
@@ -409,15 +411,16 @@ def parseXML300(soup, siTimes, titleString):
             if runTime != None:
                 times.append(
                     time.localtime(time.mktime(runTime) - time.mktime(lastTime))
-                )
+                    )
             elif finishTime:
                 times.append(
-                    time.localtime(time.mktime(finishTime) - time.mktime(startTime))
-                )
+                    time.localtime(time.mktime(finishTime) - time.mktime(
+                        startTime))
+                    )
         elif finishTime:
             times.append(
                 time.localtime(time.mktime(finishTime) - time.mktime(startTime))
-            )
+                )
 
         for i in range(1, len(controlls)):
             if i > (len(times) - 1):
@@ -434,8 +437,10 @@ def createReport(siTimes, args, titleString):
     #######
     # structure: of siTimes
     #
-    # map value by key where key is tuple of 2 controls (fromControl, toControl), value is a tuple of 3 elements,
-    # where first is tuple of (name, ageGroup, club), second array of times and third a boolean if direction of controls
+    # map value by key where key is tuple of 2 controls (fromControl,
+    # toControl), value is a tuple of 3 elements,
+    # where first is tuple of (name, ageGroup, club), second array of times
+    # and third a boolean if direction of controls
     # is forward
     #
     #######
@@ -444,8 +449,8 @@ def createReport(siTimes, args, titleString):
 
     titleElement = E.title(titleString)
     css = E.link(
-                {"rel": "stylesheet", "type": "text/css", "href": "si-analyzer.css"}
-            )
+        {"rel": "stylesheet", "type": "text/css", "href": "si-analyzer.css"}
+        )
 
     if args.inlinecss:
         cssfile = open("si-analyzer.css", "r")
@@ -453,7 +458,7 @@ def createReport(siTimes, args, titleString):
         cssfile.close()
         css = E.style(
             csstags
-        )
+            )
 
     head = E.head(titleElement, css)
 
@@ -468,19 +473,21 @@ def createReport(siTimes, args, titleString):
                     E.th({"id": "event_name"}, E.nobr(titleString)),
                     E.th(
                         {"id": "date_time"},
-                        E.nobr(strftime("%d.%m.%Y %H:%M Uhr", time.localtime())),
+                        E.nobr(strftime("%d.%m.%Y %H:%M Uhr",
+                                        time.localtime())),
+                        ),
                     ),
-                ),
                 E.tr(
-                    E.th({"id": "page_name"}, E.nobr("Zwischenzeitenauswertung")),
+                    E.th({"id": "page_name"},
+                         E.nobr("Zwischenzeitenauswertung")),
                     E.th(
                         {"id": "creation_text"},
                         E.nobr("erzeugt mit SI-Analyzer von Henry Jobst"),
+                        ),
                     ),
                 ),
-            ),
+            )
         )
-    )
 
     ntrow = None
     navtable = E.table({"id": "navtable"})
@@ -564,16 +571,17 @@ def createReport(siTimes, args, titleString):
                 E.col({"width": "60"}),
                 E.col({"width": "20"}),
                 E.col({"width": "250"}),
+                )
             )
-        )
         table.append(
             E.tr(
                 E.th(
-                    key0 + html.unescape(arrow) + key1 + " ({})".format(valueCount),
+                    key0 + html.unescape(arrow) + key1 + " ({})".format(
+                        valueCount),
                     {"colspan": "5", "id": "top"},
+                    )
                 )
             )
-        )
 
         if lastkey0 == None or lastkey0 != key0:
             lastkey0 = key0
@@ -584,8 +592,8 @@ def createReport(siTimes, args, titleString):
             E.a(
                 key0 + html.unescape(arrow) + key1 + " ({})".format(valueCount),
                 {"href": "#{}".format(anchor)},
+                )
             )
-        )
 
         ntrow.append(navtd)
 
@@ -624,14 +632,14 @@ def createReport(siTimes, args, titleString):
                 if diffTime is not None and diffTime != 0:
                     diffString = "(+{0:02}:{1:02})".format(
                         diffTime // 60, diffTime % 60
-                    )
+                        )
                 print(
                     "{:3}.".format(place),
                     strftime("%M:%S", value[1]),
                     diffString,
                     "{:1}".format(sign),
                     actualName,
-                )
+                    )
                 tableRow = E.tr()
                 tableRow.append(E.td("{:3}.".format(place)))
                 tableRow.append(E.td(strftime("%M:%S", value[1])))
@@ -649,9 +657,10 @@ def createReport(siTimes, args, titleString):
         processed[key] = True
         table.append(
             E.tr(
-                E.td({"colspan": "5"}, E.a(html.unescape("&uarr;"), {"href": "#navi"}))
+                E.td({"colspan": "5"},
+                     E.a(html.unescape("&uarr;"), {"href": "#navi"}))
+                )
             )
-        )
 
     if len(nameTimes) > 0 and len(nameFound) > 1:
         maxNameLen = 0
@@ -668,13 +677,14 @@ def createReport(siTimes, args, titleString):
                 diffTime = nameElem[1] - bestTime
             diffString = " " * 8
             if diffTime is not None and diffTime != 0:
-                diffString = "(+{0:02}:{1:02})".format(diffTime // 60, diffTime % 60)
+                diffString = "(+{0:02}:{1:02})".format(diffTime // 60,
+                                                       diffTime % 60)
             print(
                 nameElem[0].ljust(maxNameLen),
                 ":",
                 "{0:02}:{1:02}".format(nameElem[1] // 60, nameElem[1] % 60),
                 diffString,
-            )
+                )
             if bestTime is None:
                 bestTime = nameElem[1]
         print("=" * 50)
@@ -693,31 +703,35 @@ def createReport(siTimes, args, titleString):
     # print(args.merge)
 
 
-############################# main program #######################################
+############################# main program
+# #######################################
 
 parser = argparse.ArgumentParser(description="Analyze SI times.")
 parser.add_argument("url")
-parser.add_argument("-l", "--local", action="store_true", help="url is a local file")
+parser.add_argument("-l",
+                    "--local",
+                    action="store_true",
+                    help="url is a local file")
 parser.add_argument(
     "-t",
     "--type",
     choices=["course", "age", "all"],
     default="all",
     help="group times by all, age group, course, default: all",
-)
+    )
 parser.add_argument(
     "-i",
     "--inputformat",
     choices=["html", "html2", "xml203", "xml300"],
     default="html",
     help="input file format, default: html",
-)
+    )
 parser.add_argument(
     "-m",
     "--merge",
     action="store_true",
     help="merge control post sequences, eg. 110-111 with 111-110",
-)
+    )
 parser.add_argument("--proxy")
 parser.add_argument("--version", action="version", version="%(prog)s 0.1")
 parser.add_argument("-n", "--name", nargs="+")
@@ -758,7 +772,7 @@ if args.title != "":
     titleString = args.title
 
 if args.inputformat == "html":
-    parseHTML(soup, siTimes, titleString)
+    parse_html(soup, siTimes, titleString)
 elif args.inputformat == "html2":
     parseHTML2(soup, siTimes, titleString)
 elif args.inputformat == "xml203":
